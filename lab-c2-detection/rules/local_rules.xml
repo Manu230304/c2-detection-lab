@@ -1,0 +1,40 @@
+<!-- local_rules.xml — Custom Wazuh Detection Rules -->
+<!-- Place in: /var/ossec/etc/rules/local_rules.xml on Wazuh Manager -->
+
+<group name="local,custom">
+
+  <!-- Rule 1: SQL Injection attempt in web logs -->
+  <rule id="100001" level="10">
+    <if_group>web|accesslog</if_group>
+    <url_match>union|select|insert|drop|--|'%20or|%27or|1=1|benchmark|sleep\(</url_match>
+    <description>Possible SQL Injection attempt detected in web request</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sqli,web_attack</group>
+  </rule>
+
+  <!-- Rule 2: Suspicious PowerShell execution flags -->
+  <rule id="100002" level="12">
+    <if_group>windows</if_group>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(EncodedCommand|-enc|-e\s|bypass|hidden|noprofile|downloadstring|iex\s|Invoke-Expression)</field>
+    <description>Suspicious PowerShell execution flags detected</description>
+    <mitre>
+      <id>T1059.001</id>
+    </mitre>
+    <group>powershell,execution</group>
+  </rule>
+
+  <!-- Rule 3: Registry Run Key modification (persistence) -->
+  <rule id="100003" level="13">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID">^13$</field>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)\\CurrentVersion\\Run</field>
+    <description>Registry Run Key modified — possible persistence mechanism</description>
+    <mitre>
+      <id>T1547.001</id>
+    </mitre>
+    <group>persistence,registry</group>
+  </rule>
+
+</group>

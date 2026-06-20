@@ -1,0 +1,21 @@
+# Binaries — never commit actual payloads or implants
+*.exe
+*.dll
+*.bin
+*.elf
+
+# Environment / credentials
+.env
+*.key
+*.pem
+*.pfx
+secrets/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

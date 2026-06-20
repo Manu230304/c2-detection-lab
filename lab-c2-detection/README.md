@@ -4,7 +4,7 @@
 
 ---
 
-## 📋 Overview
+##  Overview
 
 This project documents a full **attack simulation lab** built from scratch, covering:
 
@@ -18,7 +18,7 @@ The goal was to understand how a real attacker operates post-compromise and how 
 
 ---
 
-## 🏗️ Lab Architecture
+##  Lab Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -48,7 +48,7 @@ The goal was to understand how a real attacker operates post-compromise and how 
 
 ---
 
-## 🔧 Setup & Configuration
+##  Setup & Configuration
 
 ### 1. Wazuh Manager (Ubuntu Server)
 
@@ -84,7 +84,7 @@ See [`rules/local_rules.xml`](rules/local_rules.xml) for the full ruleset.
 
 ---
 
-## ⚔️ Attack Chain
+##  Attack Chain
 
 ### Phase 1 — Payload Generation (Sliver C2)
 
@@ -155,7 +155,7 @@ schtasks /create /tn "DiagnosticaSistemaTask" /tr "C:\Windows\Tracing\DiagTrackH
 
 ---
 
-## 🛡️ Detection Analysis
+##  Detection Analysis
 
 ### What Wazuh Caught
 
@@ -185,7 +185,7 @@ schtasks /create /tn "DiagnosticaSistemaTask" /tr "C:\Windows\Tracing\DiagTrackH
 
 ---
 
-## 📚 Key Takeaways
+##  Key Takeaways
 
 1. **Sysmon + Wazuh is a strong combo** — nearly every post-exploitation action was flagged when the stack was active.
 2. **SIEM availability is a control** — stopping the Wazuh Manager created a blind spot. In production, this maps to monitoring the monitoring itself.
@@ -195,7 +195,7 @@ schtasks /create /tn "DiagnosticaSistemaTask" /tr "C:\Windows\Tracing\DiagTrackH
 
 ---
 
-## 🗂️ Repository Structure
+##  Repository Structure
 
 ```
 lab-c2-detection/
@@ -212,7 +212,7 @@ lab-c2-detection/
 
 ---
 
-## 🔗 References
+##  References
 
 - [Wazuh Documentation](https://documentation.wazuh.com/)
 - [Sliver C2 Framework](https://github.com/BishopFox/sliver)

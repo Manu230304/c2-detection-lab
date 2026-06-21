@@ -119,30 +119,28 @@ sliver > http  # Start HTTP listener
 
 A Sliver session opened on the attacker machine. Commands like `shell`, registry modifications, and process injection were attempted — **all detected by Wazuh/Sysmon**.
 
-
 ### Phase 3b — Privilege Escalation to SYSTEM (Scheduled Task Abuse)
 
-With an admin session open, `getsystem` in Sliver failed to produce a SYSTEM
-shell. Instead, a scheduled task was used to spawn a process under
-`NT AUTHORITY\SYSTEM`:
+`getsystem` in Sliver failed to produce a SYSTEM shell. Instead, a scheduled task was abused to spawn a new implant process under `NT AUTHORITY\SYSTEM`:
 
-\```cmd
+```cmd
 # Create a one-time task running as SYSTEM
 schtasks /create /tn "WindowsTelemetryUpdate" /tr "C:\Windows\Temp\DiagTrackHost.exe" /sc once /st 00:00 /ru "NT AUTHORITY\SYSTEM" /f
 
 # Force immediate execution
 schtasks /run /tn "WindowsTelemetryUpdate" /f
 
-# Clean up the task (payload stays in memory)
+# Clean up the task (payload stays running in memory)
 schtasks /delete /tn "WindowsTelemetryUpdate" /f
-\```
+```
 
-**Why it works:** Windows treats scheduled task creation by an admin as routine
-activity. Running a task as `NT AUTHORITY\SYSTEM` causes Windows to spawn the
-process with a SYSTEM token, effectively escalating privileges without any
-exploit.
+**How it works:** Windows allows administrators to create scheduled tasks that run under `NT AUTHORITY\SYSTEM`. When the task executes, Windows spawns the process with a SYSTEM token — giving full access to the machine without needing a kernel exploit. Deleting the task afterward removes the most obvious forensic artifact while the implant stays alive in memory.
 
-**MITRE ATT&CK:** T1053.005 — Scheduled Task/Job
+**Why it blends in:** Scheduled task creation by an administrator is routine Windows activity. The task name `WindowsTelemetryUpdate` mimics legitimate Microsoft telemetry infrastructure.
+
+**MITRE ATT&CK:** T1053.005 — Scheduled Task/Job: Scheduled Task
+
+---
 
 ### Phase 4 — Evasion & Relocation
 
@@ -150,10 +148,10 @@ With Wazuh Manager temporarily stopped (simulating a detection gap), the implant
 
 ```
 # Add folder exclusion via Sliver shell
-execute powerhsell.exe -Command "Add-MpPreference -ExclusionPath 'C:\Windows\Tracing'"
+Add-MpPreference -ExclusionPath "C:\Windows\Tracing"
 
 # Move and rename the implant
-mv C:\Users\GuestWindows\Downloads\diagtrackhost.exe → C:\Windows\Tracing\DiagTrackHost.exe
+C:\Users\GuestWindows\Downloads\diagtrackhost.exe → C:\Windows\Tracing\DiagTrackHost.exe
 ```
 
 `C:\Windows\Tracing` is a real Windows folder used by diagnostic tracing, making it a low-suspicion location for hiding a malicious binary.
@@ -189,7 +187,8 @@ schtasks /create /tn "DiagnosticaSistemaTask" /tr "C:\Windows\Tracing\DiagTrackH
 | Shell command execution via implant | T1059 | ✅ Yes |
 | Registry Run Key modification | T1547.001 | ✅ Yes |
 | Sysmon process creation (implant) | T1204 | ✅ Yes |
-| Scheduled task creation | T1053.005 | ✅ Yes |
+| Scheduled task creation (persistence) | T1053.005 | ✅ Yes |
+| Scheduled task abuse for SYSTEM token | T1053.005 | ✅ Yes |
 | Defender exclusion modification | T1562.001 | ✅ Yes |
 
 ### What Allowed Evasion
@@ -216,7 +215,7 @@ schtasks /create /tn "DiagnosticaSistemaTask" /tr "C:\Windows\Tracing\DiagTrackH
 2. **SIEM availability is a control** — stopping the Wazuh Manager created a blind spot. In production, this maps to monitoring the monitoring itself.
 3. **Living-off-the-land paths work** — hiding payloads in real Windows directories with real-looking names reduces noise.
 4. **Dual persistence is resilient** — using both Run Keys and Scheduled Tasks means removing one doesn't fully evict the attacker.
-5. **Privilege escalation is hard without a real exploit** — `getsystem` in Sliver without a proper local privilege escalation vulnerability didn't produce a SYSTEM session, reinforcing that tool claims ≠ guaranteed results.
+5. **Tool claims ≠ guaranteed results, but workarounds exist** — `getsystem` in Sliver failed to produce a SYSTEM shell, but abusing a scheduled task running as `NT AUTHORITY\SYSTEM` achieved the same result without any exploit. When one path is blocked, lateral thinking finds another.
 
 ---
 

